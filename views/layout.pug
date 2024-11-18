@@ -6,6 +6,9 @@ html
     link(rel='stylesheet', href='/css/bootstrap.min.css')
     link(rel='icon', href='data:;base64,iVBORw0KGgo=')
     link(rel="stylesheet" href="/icons/font-awesome/css/fontawesome.min.css") 
+    script(src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js")
+    link(rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css")
+    script(src="/dist/app.bundle.js")
     meta(name="viewport" content="width=device-width, initial-scale=1")
   body
     block header
@@ -21,6 +24,9 @@ html
                 li.nav-item
                   a.nav-link(href=`${item.slug}`)
                     span #{item.title}
+              li.nav-item
+                    a.nav-link(href="/stores/map")
+                        span Map
             .form-inline
               input.form-control.mr-sm-2(type="text" placeholder="Coffee, beer..." name="search")
               .search__results

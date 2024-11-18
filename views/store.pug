@@ -19,7 +19,7 @@ block content
                             if store.tags
                                 each tag in store.tags
                                     a.badge.bg-light.textprimary(href=`/tags/${tag}`) #{tag}
-        
+
         if user
             .no-gutters.row
                 .pt-3.lg-2.col-lg-12
@@ -32,4 +32,6 @@ block content
                     .pt-3.lg-2.col-lg-12
                         .card
                             .card-body
-                                +review(r) 
+                                +review(r)
+    
+
