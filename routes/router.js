@@ -31,6 +31,8 @@ router.get('/store/:slug', catchErrors(storeController.getStoreBySlug));
 // SHOW all STOREs
 router.get('/stores', catchErrors(storeController.getStores));
 
+router.get('/stores/map', catchErrors(storeController.getMaps));
+
 //1st step EDIT STORE -> show the form with current data
 router.get('/stores/:id/edit', catchErrors(storeController.editStore));
 

@@ -3,6 +3,7 @@ const uuid = require('uuid');
 const { Jimp } = require('jimp');
 const mongoose = require('mongoose');
 const Store = mongoose.model('Store');
+const fetch = require('node-fetch');
 
 //*** Verify Credentials
 const confirmOwner = (store, user) => {
@@ -70,14 +71,81 @@ exports.createStore = async (req, res) => {
     req.body.author = req.user._id; 
 };
 
-exports.getStoreBySlug = async (req, res, next) => {
-    const store = await Store.findOne({ slug: req.params.slug });
-    // If no store -> DB send a NULL -> do nothing and follow the pipeline
-    if (!store) {
-        next();
-        return;
+async function getGeolocationFromAddress(address) {
+    const baseUrl = 'https://nominatim.openstreetmap.org/search';
+    
+    try {
+        const response = await fetch(`${baseUrl}?q=${encodeURIComponent(address)}&format=json&addressdetails=1`);
+        const data = await response.json();
+
+        // Comprobar si la respuesta contiene datos
+        if (data && data.length > 0) {
+            return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon)};
+        } else {
+            throw new Error('No geolocation data found for the given address.');
+        }
+    } catch (error) {
+        console.error('Error fetching geolocation:', error);
+        return { lat: null, lon: null };
     }
-    res.render('store', { title: `Store ${store.name}`, store: store});
+}
+
+exports.getStoreBySlug = async (req, res, next) => {
+    try {
+        // Buscar la tienda por el slug
+        const store = await Store.findOne({ slug: req.params.slug });
+
+        // Si no se encuentra la tienda, pasar al siguiente middleware
+        if (!store) {
+            return res.status(404).render('error', {message: 'Store not found'});
+        }
+
+        // Obtener las coordenadas de la tienda usando la función de geolocalización
+        const geolocation = await getGeolocationFromAddress(store.address);
+
+        // Si las coordenadas son válidas, pasarlas al renderizado de la vista
+        res.render('store', {
+            title: `Store ${store.name}`,
+            store: store,
+            geolocation   // pasar la geolocalización 
+        });
+    } catch (error) {
+        res.render('store', { 
+            title: `Store ${store.name}`,
+            store, 
+            geolocation: null, 
+    })};
+};
+
+exports.getMaps = async (req, res) => {
+    const stores = await Store.find();
+    if (!stores || stores.length === 0) {
+        return res.status(404).render('error', { message: 'Stores not found' });
+    }
+
+    const storesData = [];
+
+    // Geocodificar las direcciones de todas las tiendas
+    for (const store of stores) {
+        try {
+            const geolocation = await getGeolocationFromAddress(store.address);
+            storesData.push({
+                name: store.name,
+                averageRating: store.averageRating || 0,
+                geolocation: geolocation
+            });
+        } catch (error) {
+            console.error(`Error geocodification the adress of the store ${store.name}:`, error);
+            storesData.push({
+                name: store.name,
+                averageRating: store.averageRating || 0,
+                geolocation: null 
+            });
+        }
+    }
+
+    // Renderizar la vista del mapa con las tiendas geocodificadas
+    res.render('storesMap', { storesData });
 };
 
 exports.getStores = async (req, res) => {
@@ -166,3 +234,5 @@ exports.getStores = async (req, res) => {
         pages: pages, count: count
     });
 };
+
+
